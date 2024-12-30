@@ -1,0 +1,311 @@
+import { defineStore } from 'pinia';
+import { Api } from '@/composables/Api';
+import { useToast } from 'vue-toastification';
+import { isEmpty } from 'lodash';
+const toast = useToast();
+
+export const useUserStore = defineStore('userStore', {
+  state: () => ({
+    isLoading: true,
+    processOp: false,
+    isLoadingItem: false,
+    users: [],
+    users_inactifs: [],
+    showMessage: false,
+    showMessageMail: false,
+    showEdit: false,
+    showDelete: false,
+    deleteModal: false,
+    message: {
+      idUser: null as number | null | undefined,
+      typeMessage: '',
+      subject: '',
+      text: '',
+      media_type: '',
+      url_link: '',
+    },
+    userToUse: null as { id: number } | null,
+    infoUser: {
+      id: null,
+      idUser: null as { id: number } | null,
+      firstname: '',
+      lastname: '',
+      profession: '',
+      birthday: '',
+      pays: '',
+      ville: '',
+      indicatifTel:'+226',
+      tel:'',
+      email:'',
+
+      personneUrgence:'',
+      indicatifContactTel:'+226', //indicatifContactUrg:'',
+      contactUrgence:'00000000',
+      
+      userType:'',
+      name:'',
+      boitePostal:'',
+      about:'',
+      apropos:'',
+      permisCategorie:'',
+      permisAnnee:'',
+      permisNumuero:'',
+
+      longitude: null as number | null,
+      latitude: null as number | null,
+      workPlaceName: null as number | null,
+      lngWorkPlace: null as number | null,
+      latWorkPlace: null as number | null,
+    },
+    dialogDelete: false,
+    dialogActiv: false,
+    dialogMessage: false,
+
+    vehicules: [], 
+  }),
+  actions: {
+    async getAllUsers() {
+      try {
+        const {status, data} = await Api.get('/admin/users');
+        this.users = data;
+        this.isLoading = false;
+      } catch (error) {
+        console.error('Erreur lors du chargement des données des utilisateurs:', error);
+      }finally{
+        this.isLoading = false;
+      }
+    },
+
+    async getUsersInactifs() {
+      try {
+        const {status, data} = await Api.get('/admin/users-inactif');
+        this.users_inactifs = data;
+        this.isLoading = false;
+      } catch (error) {
+        console.error('Erreur lors du chargement des données des utilisateurs:', error);
+      }finally{
+        this.isLoading = false;
+      }
+    },
+
+    // Supprimer un utilisateur
+    async deleteUser() {
+      this.isLoadingItem = true;
+      try {
+        console.log("this.userToUse",this.userToUse)
+        const response = await Api.post('/admin/supprimer-user', { idUser: this.userToUse?.id });
+        
+        if (response.status === 200) {
+          console.log("Delete User",response)
+          this.users = this.users.filter((user: any) => user.id !== this.userToUse?.id);
+          // this.getAllUsers(); // FinalInvoice.value = FinalInvoice.value.filter((user: any) => user.id !== userStore.userToUse?.id); (Dans le template)
+          this.userToUse = null
+          this.dialogDelete = false;
+          toast.success('Opération réussie');
+        } else {
+          toast.error('Opération échouée');
+          this.dialogDelete = true;
+          this.getAllUsers();
+        }
+      } catch (error) {
+        this.dialogDelete = true;
+        toast.error("Erreur lors de la suppression de l'utilisateur");
+      }finally{
+        this.isLoadingItem = false;
+      }
+    },
+
+    //Ajouter un user
+    async addUser(user:any, files:any) {
+      this.isLoadingItem = true;
+      try {
+        const {status, data} = await Api.post('/admin/user', user);
+        if (status == 200 && data) {
+          const userId = data.id;
+          
+          // Envoi des préférences
+          console.log("Préférences Send", user)
+          const response = await this.addPreferences(userId, user);
+          console.log("Préférences Response Api", response)
+    
+          // Envoi des documents (image de profil, permis, etc.)
+          // files.filePermis ?? await this.uploadFile(userId, files.filePermis, '/admin/user-permis-pic', 'idUser', 'file');
+          files.fileCni ?? await this.uploadFile(userId, files.fileCni, '/admin/user-cni-pic', "idUser", "cni");
+          files.fileMoto ?? await this.uploadFile(userId, files.fileMoto, '/admin/user-automoto-pic', "idUser", "file");
+          files.fileProfil ?? await this.uploadFile(userId, files.fileProfil, '/admin/user-pic', "id", "avatar");
+
+          toast.success('Utilisateur ajouté avec succès');
+        }
+      } catch (error) {
+        toast.error("Echec de l'enrégistrement de l'utilisateur !");
+        console.error('Erreur lors de l\'ajout de l\'utilisateur:', error);
+      }finally{
+        this.isLoadingItem = false;
+      }
+    },
+
+    // Méthode pour ajouter les préférences
+    async addPreferences(userId: any, user: any) {
+      const preferences = {
+        idUser: userId,
+        userType: user.userType || "CONDUCTEUR",
+        genre: user.gender,
+        enjoyMusicInCar: user.enjoyMusicInCar || "NEVER",
+        discussInCar: user.discussInCar || "NEVER",
+        smokeInCar: user.smokeInCar || "NEVER",
+        eatInCar: user.eatInCar || "NEVER",
+        acceptPeopleDisabilities: user.acceptPeopleDisabilities || "NEVER",
+        tolerateStops: user.tolerateStops || "NEVER",
+      };
+      
+      console.log("Préférences Send 2", preferences)
+      const response = await Api.post('/admin/user-preferences', preferences);
+      console.log("Préférences Response Api 2", response)
+    },
+
+  async ModifUser() {
+    this.isLoadingItem = true;
+      try {
+        const processedUser = { ...this.infoUser };
+        processedUser.idUser  = processedUser.id
+        processedUser.apropos  = processedUser.about
+        processedUser.boitePostal  = '--'
+        processedUser.longitude  = 1111
+        processedUser.latitude  = 1111
+        processedUser.workPlaceName  = 1111
+        processedUser.lngWorkPlace  = 1111
+        processedUser.latWorkPlace  = 1111
+        processedUser.name  = '--'
+        const response = await Api.put(`/users/${processedUser?.id}`, processedUser);
+
+        if (response.status === 200 && response.data) {
+          this.processOp = true
+          toast.success("Utilisateur modifié avec succès");
+        } else {
+          toast.error("La modification a échoué");
+        }
+      } catch (error) {
+        toast.error("Erreur lors de la modification de l'utilisateur");
+      }finally{
+        this.isLoadingItem = false;
+        this.processOp = false
+
+      }
+    },
+
+    // Méthode pour envoyer les fichiers
+    async uploadFile(userId: any, file: File, endpoint: string, appendId: string, appendName: string) {
+      if (file) {
+        
+        const formData = new FormData();
+        formData.append(appendId, userId);
+        formData.append(appendName, file);
+
+        try {
+          await Api.post(endpoint, formData)
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout du fichier :'+ appendName +" => "+ file, error);
+        }
+      }
+    },
+
+    async addMessage() {
+      this.isLoadingItem = true;
+      try {
+        const messageProcess = {...this.message}
+        messageProcess.idUser = this.userToUse?.id
+        const response = await Api.post("/admin/message-user", messageProcess);
+        
+        console.log("messageProcess", response)
+        if (response.status === 200 && response.data) {
+          this.dialogMessage = false
+          this.processOp = true
+          toast.success("Opération effectuée avec succès");
+        } else {
+          this.dialogMessage = true
+          toast.error("L'envoi a échoué");
+        }
+      } catch (error) {
+        this.dialogMessage = true
+        toast.error("Erreur lors de l'envoi du message");
+      }finally{
+        this.isLoadingItem = false;
+        this.processOp = false
+      }
+    },
+
+    messageShow(row:any, typeMessage:any) {
+      // this.messageSelect = typeMessage;
+      // this.messageContent.userId = row.id;
+      // if (typeMessage.value == 0) this.showMessage = true;
+      // if (typeMessage.value == 1) this.showMessageMail = true;
+    },
+
+    init() {
+      // Méthode pour réinitialiser les états après une opération
+      this.showMessage = false;
+      this.showMessageMail = false;
+      this.showEdit = false;
+      this.showDelete = false;
+      this.deleteModal = false;
+    },
+
+    async detailUser() {},
+
+    
+
+    async activeUser() {
+      try {
+        const data = await Api.post("/admin/activer-user", { idUser: this.userToUse });
+        
+        if (data) {
+          this.deleteModal = false;
+          this.init();
+          toast.success("Utilisateur activé avec succès !!!");
+        } else {
+          toast.error("L'activation a échoué");
+        }
+      } catch (error) {
+        toast.error("Erreur lors de l'activation de l'utilisateur");
+      }
+    },
+
+    // Préparer la modification des informations d'un utilisateur
+    async editClick(row: any) {
+      this.showEdit = true;
+      this.infoUser.id = row.id;
+      try {
+        const {status, data} = await Api.post("/admin/detail-user", { id: row.id });
+        
+        if (data && data) {
+          this.infoUser.lastname = data.personne?.lastname;
+          this.infoUser.firstname = data.personne?.firstname;
+          this.infoUser.tel = data.personne?.tel;
+          // ... autres affectations
+        }
+      } catch (error) {
+        toast.error("Erreur lors de la récupération des détails de l'utilisateur");
+      }
+    },
+
+    // Désactiver un utilisateur
+    async desactiveUser() {
+      try {
+        const data = await Api.post("admin/suspendre-user", { idUser: this.userToUse });
+        
+        if (data) {
+          this.init();
+          toast.success("Utilisateur désactivé avec succès !!!");
+        } else {
+          toast.error("La désactivation a échoué");
+        }
+      } catch (error) {
+        toast.error("Erreur lors de la désactivation de l'utilisateur");
+      }
+    },
+
+   
+    
+  },
+});
+

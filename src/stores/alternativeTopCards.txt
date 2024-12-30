@@ -1,0 +1,50 @@
+import { onMounted, computed, ref, defineComponent } from 'vue';
+import { useDashboardStore } from '@/stores/dashboardStore';
+import card_info from "@/assets/dashboard/info.svg";
+import card_persons from "@/assets/dashboard/persons.svg";
+import card_trajet from "@/assets/dashboard/trajet.svg";
+import card_trajet_encours from "@/assets/dashboard/trajet_encours.svg";
+import { nFormatter } from "@/utils/formatting";
+
+function initializeTopCardsData(info: any, locationInfo: any) {
+    return [
+        {
+            img: card_persons,
+            title: "Nombre d'utilisateurs",
+            number: nFormatter(info.totalUser, 1),
+            bgcolor: "primary",
+            textcolor: "primary",
+        },
+        {
+            img: card_trajet,
+            title: "Trajets à venir",
+            number: info.trajetsAVenir,
+            bgcolor: "warning",
+            textcolor: "warning",
+        },
+        // Ajoutez les autres objets ici...
+    ];
+}
+
+export default defineComponent({
+  setup() {
+    const dashboardStore = useDashboardStore();
+
+    const info = computed(() => dashboardStore.info);
+    const locationInfo = computed(() => dashboardStore.locationInfo);
+    const topCardsData = ref([]);
+
+    onMounted(async () => {
+      await dashboardStore.init();
+      await dashboardStore.loadDataUser(dashboardStore.yearSelected.value.value);
+      await dashboardStore.loadData(dashboardStore.yearSelected.value.value);
+      await dashboardStore.eventStat();
+
+      topCardsData.value = initializeTopCardsData(info.value, locationInfo.value);
+    });
+
+    return {
+      topCardsData,
+    };
+  },
+});
