@@ -1,7 +1,8 @@
 {
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
-    "editor.formatOnType": false,
+    "editor.formatOnType": true,
     "diffEditor.experimental.showEmptyDecorations": false,
-    "diffEditor.experimental.showMoves": false
+    "diffEditor.experimental.showMoves": false,
+    "vue3snippets.enable-compile-vue-file-on-did-save-code": true
 }
