@@ -1,29 +1,12 @@
-# README #
+# README
 
-This README would normally document whatever steps are necessary to get your application up and running.
+### How do I get set up?
 
-### What is this repository for? ###
+-   git clone https://github.com/JoseCreeds/test_fidele_ui.git
+-   npm i
+-   npm run dev
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+### Who do I talk to?
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact# test_fidele_ui
+-   Repo owner or admin
+-   Other community or team contact# test_fidele_ui
